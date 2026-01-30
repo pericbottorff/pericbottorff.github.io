@@ -604,7 +604,7 @@
 
                 const title = document.createElement('h2');
                 title.className = 'group-title';
-                title.innerText = groupName;
+                title.innerText = state.groupBy === 'week' ? `Week ${groupName}` : groupName;
                 groupSection.appendChild(title);
 
                 const grid = document.createElement('div');
