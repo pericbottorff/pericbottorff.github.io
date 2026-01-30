@@ -324,7 +324,7 @@
                 <select id="groupBySelect" class="form-input" style="width: auto; margin-right: 0.5rem;">
                     <option value="none">Group By: None</option>
                     <option value="grade">Group By: Grade</option>
-                    <option value="id">Group By: ID</option>
+                    <option value="week">Group By: Week</option>
                 </select>
                 <input type="text" id="searchInput" placeholder="Search files...">
                 <button class="icon-btn" id="settingsBtn" title="Settings">
@@ -388,10 +388,10 @@
         const state = {
             files: [],
             groupBy: 'none',
-            config: JSON.parse(localStorage.getItem('dirDashboardConfig')) || {
-                mode: 'auto',
-                ghUsername: '',
-                ghRepo: '',
+            config: {
+                mode: 'github',
+                ghUsername: 'pericbottorff',
+                ghRepo: 'pericbottorff.github.io',
                 ghBranch: 'main'
             }
         };
@@ -515,14 +515,14 @@
 
         // --- Parsing Helpers ---
         function getFileMetadata(filename) {
-            // Pattern: "Grade info (ID info).html"
-            // Example: "3rd-Grade (12).html" -> Grade: "3rd-Grade", ID: "12"
+            // Pattern: "Grade info (Week info).html"
+            // Example: "3rd-Grade (12).html" -> Grade: "3rd-Grade", Week: "12"
             const gradeMatch = filename.match(/^(.*?)\s*\(/);
-            const idMatch = filename.match(/\((.*?)\)/);
+            const weekMatch = filename.match(/\((.*?)\)/);
 
             return {
                 grade: gradeMatch ? gradeMatch[1].trim() : 'Uncategorized',
-                id: idMatch ? idMatch[1].trim() : 'Uncategorized'
+                week: weekMatch ? weekMatch[1].trim() : 'Uncategorized'
             };
         }
 
@@ -578,14 +578,25 @@
             const groups = {};
             files.forEach(file => {
                 const meta = getFileMetadata(file.name);
-                const key = state.groupBy === 'grade' ? meta.grade : meta.id;
+                const key = state.groupBy === 'grade' ? meta.grade : meta.week;
 
                 if (!groups[key]) groups[key] = [];
                 groups[key].push(file);
             });
 
             // Sort keys
-            const sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            const sortedKeys = Object.keys(groups).sort((a, b) => {
+                if (state.groupBy === 'week') {
+                    // Try numeric sort descending for weeks
+                    const numA = parseFloat(a);
+                    const numB = parseFloat(b);
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return numB - numA; // Descending
+                    }
+                }
+                // Default ascending or for non-numeric week values
+                return a.localeCompare(b, undefined, { numeric: true });
+            });
 
             sortedKeys.forEach(groupName => {
                 const groupSection = document.createElement('div');
